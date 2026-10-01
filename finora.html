@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finora — AI Financial Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & VARIABLES ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #060d08;
+  --bg2:       #0a1410;
+  --bg3:       #0e1c16;
+  --bg4:       #122019;
+  --border:    #1a3024;
+  --border2:   #0f2018;
+  --green:     #1db954;
+  --green2:    #23d660;
+  --green-dim: #136b33;
+  --text:      #d4edd9;
+  --text2:     #8ab89a;
+  --text3:     #4a7a5a;
+  --user-bg:   #163828;
+  --user-text: #c8f0d8;
+  --red:       #e05050;
+  --amber:     #f5a623;
+  --sidebar-w: 280px;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+  --radius:    14px;
+  --t:         0.18s ease;
+}
+
+html, body { height: 100%; width: 100%; overflow: hidden; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── TOP BAR ───────────────────────────────────────────────────── */
+.topbar {
+  height: 52px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 14px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+.topbar-brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--green);
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar-brand .badge {
+  font-size: 9px;
+  background: var(--green);
+  color: #000;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.topbar-spacer { flex: 1; }
+.topbar-status {
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.topbar-status .dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.sidebar-toggle {
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); padding: 4px; display: none;
+  align-items: center; justify-content: center;
+}
+
+/* ─── MAIN LAYOUT ───────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ─── SIDEBAR ───────────────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  overflow-y: auto;
+  transition: transform var(--t), width var(--t);
+}
+.sidebar::-webkit-scrollbar { width: 2px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+.sidebar-section {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+
+.sidebar-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+/* Provider selector */
+.provider-select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: var(--font-body);
+  padding: 8px 10px;
+  width: 100%;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%234a7a5a' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.provider-select:focus { border-color: var(--green-dim); }
+
+.api-key-wrap {
+  margin-top: 8px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+}
+.api-key-wrap.visible { display: flex; }
+
+.api-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  padding: 7px 10px;
+  width: 100%;
+  outline: none;
+  letter-spacing: 1px;
+}
+.api-input:focus { border-color: var(--green-dim); }
+.api-input::placeholder { color: var(--text3); letter-spacing: 0; font-family: var(--font-body); }
+
+.api-btn-row { display: flex; gap: 5px; }
+.api-save-btn {
+  flex: 1;
+  background: var(--green-dim);
+  border: none;
+  border-radius: 8px;
+  color: #c8ffd4;
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background var(--t);
+}
+.api-save-btn:hover { background: var(--green); color: #000; }
+
+.api-clear-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text3);
+  font-size: 11px;
+  font-family: var(--font-body);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.api-clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+.key-status {
+  font-size: 10px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.key-status.saved { color: var(--green); }
+
+/* Notification toggle */
+.notif-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background var(--t);
+}
+.notif-toggle:hover { background: var(--bg4); }
+.notif-label { font-size: 12px; color: var(--text2); }
+.notif-badge { font-size: 10px; font-weight: 600; }
+.notif-badge.on { color: var(--green); }
+.notif-badge.off { color: var(--text3); }
+
+/* Business data */
+.biz-data { display: flex; flex-direction: column; gap: 5px; }
+.biz-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+}
+.biz-key { color: var(--text3); }
+.biz-val { color: var(--text2); font-weight: 500; font-family: var(--font-mono); font-size: 11px; }
+.biz-val.warn { color: var(--amber); }
+.biz-val.ok { color: var(--green); }
+
+/* ─── CREDIT HEALTH ─────────────────────────────────────────────── */
+.credit-score { display: flex; flex-direction: column; gap: 7px; }
+.score-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #e05050 0%, #f5a623 40%, #1db954 100%);
+  transition: width 0.5s ease;
+}
+.score-value {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--green);
+  font-weight: 700;
+}
+.loan-hint {
+  font-size: 11px;
+  color: var(--text2);
+}
+.credit-btn {
+  background: var(--green-dim);
+  border: none;
+  border-radius: 8px;
+  color: #c8ffd4;
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background var(--t);
+  text-align: left;
+}
+.credit-btn:hover { background: var(--green); color: #000; }
+
+/* History list */
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  min-height: 60px;
+}
+.history-list::-webkit-scrollbar { width: 2px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.history-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--text3);
+  transition: background var(--t);
+  border: 1px solid transparent;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-item:hover { background: var(--bg3); color: var(--text2); }
+.history-item.active { background: var(--bg3); border-color: var(--border); color: var(--green); }
+.history-item .hi-time { font-size: 9px; color: var(--text3); margin-top: 2px; }
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.sb-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text3);
+  font-size: 11px;
+  font-family: var(--font-body);
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--t);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sb-btn:hover { background: var(--bg3); color: var(--text2); }
+.sb-btn.danger:hover { border-color: var(--red); color: var(--red); }
+.sb-btn.accent { border-color: var(--green-dim); color: var(--green); }
+.sb-btn.accent:hover { background: rgba(29,185,84,0.08); }
+
+/* ─── CHAT AREA ─────────────────────────────────────────────────── */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.chat-header {
+  padding: 12px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.chat-avatar {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--green), #0d8c3d);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.chat-header-info { flex: 1; }
+.chat-header-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chat-header-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ─── MESSAGES ──────────────────────────────────────────────────── */
+.date-chip {
+  text-align: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  margin: 6px 0;
+}
+
+.msg-group {
+  display: flex;
+  flex-direction: column;
+  max-width: min(680px, 72%);
+  gap: 3px;
+}
+.msg-group.user { align-self: flex-end; align-items: flex-end; }
+.msg-group.assistant { align-self: flex-start; align-items: flex-start; }
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-group.user .bubble {
+  background: var(--user-bg);
+  color: var(--user-text);
+  border-bottom-right-radius: 4px;
+}
+.msg-group.assistant .bubble {
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+.msg-time { font-size: 10px; color: var(--text3); }
+
+/* Trust actions */
+.trust-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.trust-btn {
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all var(--t);
+  background: transparent;
+}
+.trust-btn.sahi { border-color: var(--green-dim); color: var(--green); }
+.trust-btn.sahi:hover { background: rgba(29,185,84,0.1); }
+.trust-btn.galat { border-color: #3a1a1a; color: #e05050; }
+.trust-btn.galat:hover { background: rgba(224,80,80,0.08); }
+
+/* Correction input */
+.correction-wrap {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: stretch;
+}
+.correction-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: var(--font-body);
+  padding: 7px 12px;
+  outline: none;
+}
+.correction-input:focus { border-color: var(--green-dim); }
+.correction-send {
+  background: var(--green-dim);
+  border: none;
+  border-radius: 10px;
+  color: #c8ffd4;
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: background var(--t);
+}
+.correction-send:hover { background: var(--green); color: #000; }
+
+/* Quick replies */
+.quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.qr-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--green);
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.qr-btn:hover { background: rgba(29,185,84,0.08); border-color: var(--green); }
+.qr-btn:active { transform: scale(0.97); }
+
+/* Confirmation bubble */
+.confirm-bubble {
+  background: rgba(245,166,35,0.07);
+  border: 1px solid rgba(245,166,35,0.25);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+.confirm-q { font-size: 13px; color: var(--amber); margin-bottom: 8px; }
+.confirm-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.confirm-yes, .confirm-no {
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: none;
+  transition: all var(--t);
+}
+.confirm-yes { background: var(--green); color: #000; }
+.confirm-yes:hover { background: var(--green2); }
+.confirm-no { background: var(--bg4); color: var(--text2); border: 1px solid var(--border); }
+.confirm-no:hover { border-color: var(--red); color: var(--red); }
+
+/* Typing indicator */
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  width: fit-content;
+}
+.t-dot {
+  width: 6px; height: 6px;
+  background: var(--text3);
+  border-radius: 50%;
+  animation: bounce 1.3s infinite;
+}
+.t-dot:nth-child(2) { animation-delay: 0.2s; }
+.t-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0);opacity:0.35} 30%{transform:translateY(-5px);opacity:1} }
+
+/* ─── INPUT AREA ────────────────────────────────────────────────── */
+.input-section { flex-shrink: 0; }
+
+.demo-strip {
+  padding: 6px 20px;
+  background: var(--bg);
+  border-top: 1px solid var(--border2);
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+.demo-strip::-webkit-scrollbar { display: none; }
+.demo-chip {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  font-size: 11px;
+  font-family: var(--font-body);
+  padding: 4px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--t);
+  flex-shrink: 0;
+}
+.demo-chip:hover { background: var(--bg3); color: var(--text2); border-color: var(--border); }
+
+.input-bar {
+  padding: 10px 20px 14px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border2);
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.input-wrap {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px 16px;
+  gap: 10px;
+  transition: border-color var(--t);
+}
+.input-wrap:focus-within { border-color: var(--green-dim); }
+#msgInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: var(--font-body);
+  resize: none;
+  max-height: 100px;
+  min-height: 22px;
+  line-height: 1.5;
+}
+#msgInput::placeholder { color: var(--text3); }
+
+.attach-btn {
+  width: 32px; height: 32px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-size: 14px;
+  transition: all var(--t);
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+.attach-btn:hover { background: var(--bg3); color: var(--text2); border-color: var(--border); }
+
+.send-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--green);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t);
+  flex-shrink: 0;
+}
+.send-btn:hover { background: var(--green2); }
+.send-btn:active { transform: scale(0.92); }
+.send-btn svg { fill: #000; }
+
+/* ─── MODALS ────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  width: min(420px, 90vw);
+}
+.modal-title { font-family: var(--font-mono); font-size: 13px; color: var(--green); letter-spacing: 1px; margin-bottom: 16px; }
+.modal-body { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btn-cancel {
+  background: none; border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text3); font-family: var(--font-body); font-size: 12.5px;
+  padding: 8px 16px; cursor: pointer; transition: all var(--t);
+}
+.modal-btn-cancel:hover { background: var(--bg3); color: var(--text2); }
+.modal-btn-confirm {
+  background: var(--red); border: none; border-radius: 10px;
+  color: #fff; font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+  padding: 8px 16px; cursor: pointer; transition: all var(--t);
+}
+.modal-btn-confirm:hover { background: #c94040; }
+.modal-btn-green {
+  background: var(--green); border: none; border-radius: 10px;
+  color: #000; font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+  padding: 8px 16px; cursor: pointer; transition: all var(--t);
+}
+.modal-btn-green:hover { background: var(--green2); }
+
+/* Support modal textarea */
+.support-textarea {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: var(--font-body);
+  padding: 10px 12px;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  margin-top: 10px;
+}
+.support-textarea:focus { border-color: var(--green-dim); }
+
+/* Bill scan message */
+.bill-scan {
+  background: rgba(29,185,84,0.06);
+  border: 1px solid var(--green-dim);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+.bill-scan strong { color: var(--text); }
+
+/* ─── RESPONSIVE ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 260px; }
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    transform: translateX(-100%);
+    z-index: 200;
+    transition: transform 0.25s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: flex; }
+  .chat-messages { padding: 14px; }
+  .input-bar { padding: 8px 14px 12px; }
+  .demo-strip { padding: 6px 14px; }
+  .msg-group { max-width: 88%; }
+}
+
+@media (min-width: 1200px) {
+  .chat-messages { padding: 24px max(24px, calc(50% - 400px)); }
+}
+
+/* ─── UTILITY ───────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* Demo disclaimers */
+.score-note { font-size: 9.5px; color: var(--text3); line-height: 1.4; }
+.disclaimer {
+  padding: 5px 20px 8px;
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+}
+.fade-in { animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* Scrollbar global */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="topbar-brand">
+    Finora <span class="badge">AI</span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-status" id="topStatus">
+    <div class="dot"></div> <span id="statusText">Ready</span>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+
+    <!-- AI Provider -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">AI Provider</div>
+      <select class="provider-select" id="providerSelect" onchange="onProviderChange()">
+        <option value="claude">🤖 Claude (Anthropic)</option>
+        <option value="openai">💬 GPT (OpenAI)</option>
+        <option value="gemini">✨ Gemini (Google)</option>
+        <option value="mock">🧪 Mock / Demo Mode</option>
+      </select>
+      <div class="api-key-wrap" id="apiKeyWrap">
+        <input type="password" class="api-input" id="apiKeyInput" placeholder="Paste your API key here…" autocomplete="off" spellcheck="false">
+        <div class="api-btn-row">
+          <button class="api-save-btn" onclick="saveApiKey()">Save ✓</button>
+          <button class="api-clear-btn" onclick="clearApiKey()">Clear</button>
+        </div>
+        <div class="key-status" id="keyStatus">No key saved</div>
+        <div class="score-note">Keys are stored unencrypted in this browser's localStorage. Use a restricted or test key.</div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Notifications</div>
+      <div class="notif-toggle" onclick="toggleNotif()" id="notifToggle">
+        <span class="notif-label" id="notifLabel">🔔 Weekly Digest</span>
+        <span class="notif-badge on" id="notifBadge">ON</span>
+      </div>
+    </div>
+
+    <!-- Business Snapshot -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Business Snapshot</div>
+      <div class="biz-data">
+        <div class="biz-row"><span class="biz-key">Bank Balance</span><span class="biz-val warn" id="snapBank">—</span></div>
+        <div class="biz-row"><span class="biz-key">Pending (recv)</span><span class="biz-val ok" id="snapPending">—</span></div>
+        <div class="biz-row"><span class="biz-key">GST Due</span><span class="biz-val warn" id="snapGST">—</span></div>
+        <div class="biz-row"><span class="biz-key">Profit (MTD)</span><span class="biz-val ok" id="snapProfit">—</span></div>
+      </div>
+    </div>
+
+    <!-- Credit Health -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">💰 Demo Credit Health</div>
+      <div class="credit-score">
+        <div class="score-bar">
+          <div class="score-fill" id="scoreFill" style="width:0%"></div>
+        </div>
+        <div class="score-value" id="scoreValue">—/100</div>
+        <div class="loan-hint" id="loanHint">Calculating…</div>
+        <div class="score-note">Demo calculation — not an official credit score or lender decision.</div>
+        <button class="credit-btn" onclick="checkLoanEligibility()">Demo Loan Range →</button>
+      </div>
+    </div>
+
+    <!-- Chat History -->
+    <div class="sidebar-label" style="padding: 12px 14px 0; font-size:9px; letter-spacing:2px; color:var(--text3); text-transform:uppercase;">Chat History</div>
+    <div class="history-list" id="historyList">
+      <div class="history-item active">Current Session<div class="hi-time" id="histTimestamp"></div></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <button class="sb-btn accent" onclick="exportToCSV()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        📎 CA Export (CSV)
+      </button>
+      <button class="sb-btn" onclick="newSession()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Session
+      </button>
+      <button class="sb-btn" onclick="exportChat()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Chat
+      </button>
+      <button class="sb-btn" onclick="openSupportModal()">
+        🧑‍💼 Support (Demo)
+      </button>
+      <button class="sb-btn" onclick="triggerWeeklyDigest()" title="Generate a weekly digest now">
+        📋 Weekly Digest
+      </button>
+      <button class="sb-btn danger" onclick="showClearModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Clear History
+      </button>
+    </div>
+
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-avatar">F</div>
+      <div class="chat-header-info">
+        <div class="chat-header-name">Finora — AI Financial Assistant <span style="font-size:10px;background:var(--green);color:#000;font-weight:700;padding:2px 7px;border-radius:6px;font-family:var(--font-mono);letter-spacing:0.5px;">DEMO</span></div>
+        <div class="chat-header-sub" id="headerSub">Demo Trading Co. • GSTIN: 00AAAAA0000A0Z0 • Synthetic demo data</div>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="date-chip">TODAY — <span id="todayDate"></span></div>
+    </div>
+
+    <div class="input-section">
+      <div class="demo-strip">
+        <button class="demo-chip" onclick="sendQuick('GST kitna bharna hai is mahine?')">GST due?</button>
+        <button class="demo-chip" onclick="sendQuick('Demo Customer A ka payment kab aayega?')">Customer A Payment</button>
+        <button class="demo-chip" onclick="sendQuick('Sample Buyer ne 50000 dena hai, note karo')">Add Invoice ₹</button>
+        <button class="demo-chip" onclick="sendQuick('Cash flow kaisa hai?')">Cash Flow</button>
+        <button class="demo-chip" onclick="sendQuick('Is mahine ka summary batao with last month comparison')">Monthly Summary</button>
+        <button class="demo-chip" onclick="sendQuick('Overdue payments kaun kaun se hain?')">Overdue List</button>
+        <button class="demo-chip" onclick="sendQuick('Sabko payment reminder bhejo')">Send Reminders</button>
+        <button class="demo-chip" onclick="sendQuick('Loan mil sakta hai?')">Loan Check</button>
+        <button class="demo-chip" onclick="sendQuick('CA ko bhej')">CA Export</button>
+        <button class="demo-chip" onclick="sendQuick('GST file kardo')">File GST (demo)</button>
+      </div>
+      <div class="input-bar">
+        <button class="attach-btn" onclick="triggerPhotoUpload()" title="Upload a bill photo (demo: mock extraction, nothing is read or stored)">📷</button>
+        <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+        <div class="input-wrap">
+          <textarea id="msgInput" placeholder="Type in Hindi, Hinglish, or English…" rows="1"
+            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        </div>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div class="disclaimer">Prototype with synthetic demo data. Not a bank, lender, CA, tax-filing service, credit bureau or financial advisor.</div>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR HISTORY MODAL -->
+<div class="overlay" id="clearModal">
+  <div class="modal">
+    <div class="modal-title">⚠️ CLEAR HISTORY</div>
+    <div class="modal-body">Yeh action chat messages delete karega aur business data ko demo defaults pe reset karega. Kya aap sure hain?<br><br>Saved API keys isse nahi hatenge — unhe sidebar ke Clear button se hatao.</div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="hideClearModal()">Cancel</button>
+      <button class="modal-btn-confirm" onclick="clearHistory()">Haan, Delete Karo</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT MODAL -->
+<div class="overlay" id="supportModal">
+  <div class="modal">
+    <div class="modal-title">🧑‍💼 SUPPORT (DEMO)</div>
+    <div class="modal-body">
+      Describe your issue. In this demo the note is saved only in this browser (localStorage). There is no support team or backend, so nobody will receive it.
+      <textarea class="support-textarea" id="supportMsg" placeholder="Describe the issue here…"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn-cancel" onclick="closeSupportModal()">Cancel</button>
+      <button class="modal-btn-green" onclick="submitSupportRequest()">Save locally ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE SIDEBAR BACKDROP -->
+<div id="sidebarBackdrop" style="display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.5);" onclick="toggleSidebar()"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   Finora — State & Config
+══════════════════════════════════════════════════════════════════ */
+const STORAGE_KEY = 'finora_v1';
+
+const MOCK_VENDORS = ['Sample Stationers','Demo Raw Materials Ltd.','Example Logistics','Sample Utilities Co.','Demo Maintenance Services'];
+const MOCK_CATEGORIES = ['Office Supplies','Raw Material','Transport','Utilities','Maintenance'];
+
+// Synthetic demo data for local demonstration only.
+const DEMO_BIZ_DATA = {
+  name: 'Demo Trading Co.',
+  gstin: '00AAAAA0000A0Z0',
+  revenue: 2120000,
+  lastRevenue: 1890000,
+  expenses: 1297000,
+  lastExpenses: 1205000,
+  bank: 420000,
+  gstPayable: 381600,
+  gstDueDays: 12,
+  tdsPending: 45200,
+  gstHistory: ['on_time','on_time','on_time'],
+  pendingPayments: [
+    { name: 'Demo Customer A', amount: 80000, days: 47, status: 'overdue' },
+    { name: 'Demo Customer B', amount: 125000, days: 23, status: 'overdue' },
+    { name: 'Sample Fabrics Co.', amount: 62500, days: 15, status: 'pending' },
+    { name: 'Demo Wholesale', amount: 35000, days: 8, status: 'pending' },
+    { name: 'Example Traders', amount: 240000, days: 3, status: 'new' },
+  ],
+  expensesList: [],
+  corrections: [],
+  creditScore: 0,
+  lastLoanCheck: null,
+  loanApplications: [],
+  lastExport: null
+};
+
+let state = {
+  messages: [],
+  biz: JSON.parse(JSON.stringify(DEMO_BIZ_DATA)),
+  provider: 'claude',
+  apiKeys: {},
+  silentMode: false,
+  lastDigestSent: null,
+  supportRequests: []
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const s = JSON.parse(saved);
+      state = { ...state, ...s };
+      state.biz = { ...DEMO_BIZ_DATA, ...state.biz };
+    }
+  } catch (e) { /* corrupt or unavailable storage: keep defaults */ }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CREDIT SCORING
+══════════════════════════════════════════════════════════════════ */
+function computeCreditScore() {
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+
+  // GST compliance (30%)
+  const gstOk = b.gstHistory.slice(-3).every(h => h === 'on_time');
+  const gstScore = gstOk ? 100 : 40;
+
+  // Overdue payments (30%)
+  const total = b.pendingPayments.reduce((s,p) => s + p.amount, 0);
+  const overdueTot = b.pendingPayments.filter(p=>p.status==='overdue').reduce((s,p)=>s+p.amount,0);
+  const overdueRatio = total > 0 ? overdueTot / total : 0;
+  const overdueScore = Math.max(0, Math.round((1 - overdueRatio) * 100));
+
+  // Bank balance vs GST due (20%)
+  const balanceScore = b.bank > b.gstPayable ? 100 : Math.round((b.bank / b.gstPayable) * 100);
+
+  // Profitability (20%)
+  const profitScore = profit > 0 ? 100 : 0;
+
+  const score = Math.round(
+    (gstScore * 0.30) + (overdueScore * 0.30) + (Math.min(balanceScore,100) * 0.20) + (profitScore * 0.20)
+  );
+  state.biz.creditScore = score;
+  return score;
+}
+
+function scoreLabel(score) {
+  if (score >= 80) return 'Excellent';
+  if (score >= 65) return 'Good';
+  if (score >= 45) return 'Fair';
+  return 'Poor';
+}
+
+function loanRange(score) {
+  if (score >= 80) return { bank: '₹5L - ₹10L', nbfc: '₹8L - ₹15L', low: 500000, high: 1500000 };
+  if (score >= 65) return { bank: '₹3L - ₹5L', nbfc: '₹5L - ₹8L', low: 300000, high: 800000 };
+  if (score >= 45) return { bank: '₹1L - ₹2L', nbfc: '₹2L - ₹4L', low: 100000, high: 400000 };
+  return { bank: 'Below demo range', nbfc: '₹50K - ₹1L', low: 0, high: 100000 };
+}
+
+function updateCreditUI() {
+  const score = computeCreditScore();
+  const label = scoreLabel(score);
+  const range = loanRange(score);
+  document.getElementById('scoreFill').style.width = score + '%';
+  document.getElementById('scoreValue').textContent = `${score}/100 · ${label}`;
+  document.getElementById('loanHint').textContent = `🏦 Illustrative range: ${range.bank}`;
+}
+
+function loanSummaryText() {
+  const score = computeCreditScore();
+  const range = loanRange(score);
+  return `💰 Demo Loan Range\n\nDemo credit score: ${score}/100 (${scoreLabel(score)})\n\nIllustrative ranges:\n• Bank loan: ${range.bank}\n• NBFC / Fintech: ${range.nbfc}\n\n⚠️ Demo calculation only — not an official credit score, a lender decision, or a guarantee of eligibility.`;
+}
+
+function checkLoanEligibility() {
+  state.biz.lastLoanCheck = new Date().toISOString().slice(0, 10);
+  const msg = loanSummaryText() + '\n\nKya karein?';
+  appendAssistantMsg(msg, ['Prepare demo bank application', 'Prepare demo NBFC application', 'GALAT HAI ❌'], true, null, null, true);
+  state.messages.push({ role: 'assistant', content: msg });
+  saveState();
+  scrollChat();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CA EXPORT (CSV)
+══════════════════════════════════════════════════════════════════ */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+// Neutralise cells that spreadsheet apps could interpret as formulas.
+function csvCell(value) {
+  let s = String(value);
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function exportToCSV() {
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+  const rows = [
+    ['Note', 'Synthetic demo data for local demonstration only', '', '', ''],
+    ['Type', 'Party / Item', 'Amount (₹)', 'Status', 'Days'],
+    ...b.pendingPayments.map(p => ['Pending', p.name, p.amount, p.status, p.days]),
+    ['', '', '', '', ''],
+    ['Revenue', 'Total Sales this month', b.revenue, '', ''],
+    ['Expenses', 'Total Expenses', b.expenses, '', ''],
+    ['Profit', 'Net Profit (MTD)', profit, '', ''],
+    ['GST', 'GST Payable', b.gstPayable, `Due in ${b.gstDueDays} days`, ''],
+    ['TDS', 'TDS Pending', b.tdsPending, '', ''],
+    ['Bank', 'Balance', b.bank, '', ''],
+    ['', '', '', '', ''],
+    ...b.expensesList.map(e => ['Expense', e.vendor, e.amount, e.category, e.date])
+  ];
+
+  const csv = rows.map(r => r.map(csvCell).join(',')).join('\n');
+  downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+    `finora_ca_report_${new Date().toISOString().slice(0, 10)}.csv`);
+
+  state.biz.lastExport = new Date().toISOString().slice(0, 10);
+
+  const msg = `✅ CA report (demo CSV) download ho gaya.\n\nIsmein hai:\n• Pending payments (${b.pendingPayments.length} parties)\n• Profit/Loss summary\n• GST status\n• Bank balance\n\nNote: yeh synthetic demo data hai. Aur kuch chahiye?`;
+  appendAssistantMsg(msg, ['Monthly summary', 'GST status'], true);
+  state.messages.push({ role: 'assistant', content: msg });
+  saveState();
+  scrollChat();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PHOTO / BILL UPLOAD
+══════════════════════════════════════════════════════════════════ */
+function triggerPhotoUpload() {
+  document.getElementById('photoInput').click();
+}
+
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = ''; // the file itself is never read, stored or uploaded
+
+  appendUserMsg('📷 [Bill photo uploaded]');
+  state.messages.push({ role: 'user', content: '[Bill photo uploaded]' });
+
+  showTyping();
+  setTimeout(() => {
+    removeTyping();
+    // Mock extraction: random sample values, no OCR is performed.
+    const vendor = MOCK_VENDORS[Math.floor(Math.random() * MOCK_VENDORS.length)];
+    const amount = Math.floor(Math.random() * 4500 + 500);
+    const today = new Date().toLocaleDateString('en-IN');
+    const category = MOCK_CATEGORIES[Math.floor(Math.random() * MOCK_CATEGORIES.length)];
+
+    const msgId = 'bill_' + Date.now();
+    const area = document.getElementById('chatMessages');
+    const g = document.createElement('div');
+    g.className = 'msg-group assistant fade-in';
+    g.setAttribute('data-id', msgId);
+
+    g.innerHTML = `
+      <div class="bubble">Mock bill extraction (demo) 📷\n\nNo OCR is performed — these are random sample values:</div>
+      <div class="msg-meta"><div class="msg-time">${getTime()}</div></div>
+      <div class="bill-scan">
+        <strong>Vendor:</strong> ${escHtml(vendor)}<br>
+        <strong>Amount:</strong> ₹${fmt(amount)}<br>
+        <strong>Date:</strong> ${escHtml(today)}<br>
+        <strong>Category:</strong> ${escHtml(category)}<br><br>
+        Add this sample as an expense?
+      </div>
+      <div class="confirm-btns" style="margin-top:8px;gap:8px;display:flex;flex-wrap:wrap;">
+        <button class="confirm-yes" data-action="bill-add" data-msg-id="${msgId}" data-vendor="${escHtml(vendor)}" data-amount="${amount}" data-date="${escHtml(today)}" data-category="${escHtml(category)}">✅ Haan, Add Karo</button>
+        <button class="confirm-no" data-action="bill-cancel" data-msg-id="${msgId}">❌ Cancel</button>
+      </div>`;
+
+    area.appendChild(g);
+    scrollChat();
+    state.messages.push({ role: 'assistant', content: `Mock bill extraction: ${vendor} ₹${amount} on ${today}` });
+    saveState();
+  }, 1500);
+}
+
+function confirmBillAdd(msgId, vendor, amount, date, category) {
+  if (!Number.isFinite(amount)) return;
+  state.biz.expensesList.push({ vendor, amount, date, category, source: 'photo' });
+  state.biz.expenses += amount;
+  saveState();
+  updateSnapshot();
+
+  const el = document.querySelector(`[data-id="${msgId}"] .confirm-btns`);
+  if (el) el.innerHTML = `<span style="color:var(--green);font-size:12.5px">✅ ${escHtml(vendor)} ₹${fmt(amount)} expenses mein add ho gaya!</span>`;
+
+  state.messages.push({ role: 'assistant', content: `✅ Bill added: ${vendor} ₹${fmt(amount)}` });
+  saveState();
+}
+
+function cancelBillAdd(msgId) {
+  const el = document.querySelector(`[data-id="${msgId}"] .confirm-btns`);
+  if (el) el.innerHTML = `<span style="color:var(--text3);font-size:12.5px">❌ Cancelled.</span>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   LOAN APPLICATION FLOW
+══════════════════════════════════════════════════════════════════ */
+function applyForLoan(type) {
+  const msgId = 'loan_' + Date.now();
+  const area = document.getElementById('chatMessages');
+  const g = document.createElement('div');
+  g.className = 'msg-group assistant fade-in';
+  g.setAttribute('data-id', msgId);
+  g.innerHTML = `
+    <div class="confirm-bubble">
+      <div class="confirm-q">⚠️ Prepare a demo ${escHtml(type)} application from the synthetic business data? Nothing is sent to any lender.</div>
+      <div class="confirm-btns">
+        <button class="confirm-yes" data-action="loan-confirm" data-msg-id="${msgId}" data-type="${escHtml(type)}">✅ Prepare</button>
+        <button class="confirm-no" data-action="loan-cancel" data-msg-id="${msgId}">❌ Cancel</button>
+      </div>
+    </div>`;
+  area.appendChild(g);
+  scrollChat();
+}
+
+function handleLoanConfirm(msgId, confirmed, loanType) {
+  const bubble = document.querySelector(`[data-id="${msgId}"] .confirm-bubble`);
+  if (confirmed) {
+    state.biz.loanApplications.push({ date: new Date().toISOString().slice(0, 10), type: loanType, status: 'prepared_locally' });
+    saveState();
+    if (bubble) bubble.innerHTML = `<span style="color:var(--green);font-size:12.5px">✅ Demo application prepared locally (${escHtml(loanType)}). It was not sent to any lender or partner.</span>`;
+  } else {
+    if (bubble) bubble.innerHTML = `<span style="color:var(--text3);font-size:12.5px">❌ Cancelled. Kab chahiye batao.</span>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   API KEY MANAGEMENT
+══════════════════════════════════════════════════════════════════ */
+function updateApiKeyUI() {
+  const wrap = document.getElementById('apiKeyWrap');
+  const isMock = state.provider === 'mock';
+  if (isMock) {
+    wrap.classList.remove('visible');
+  } else {
+    wrap.classList.add('visible');
+    const saved = state.apiKeys[state.provider];
+    const input = document.getElementById('apiKeyInput');
+    const statusEl = document.getElementById('keyStatus');
+    input.value = '';
+    if (saved) {
+      input.placeholder = '•••••••• (click to change)';
+      statusEl.textContent = '✓ Key saved';
+      statusEl.className = 'key-status saved';
+    } else {
+      input.placeholder = 'Paste your API key here…';
+      statusEl.textContent = 'No key saved';
+      statusEl.className = 'key-status';
+    }
+  }
+}
+
+function saveApiKey() {
+  const input = document.getElementById('apiKeyInput');
+  const key = input.value.trim();
+  if (!key) return;
+  state.apiKeys[state.provider] = key;
+  saveState();
+  input.value = '';
+  input.placeholder = '•••••••• (click to change)';
+  const statusEl = document.getElementById('keyStatus');
+  statusEl.textContent = '✓ Key saved';
+  statusEl.className = 'key-status saved';
+}
+
+function clearApiKey() {
+  delete state.apiKeys[state.provider];
+  saveState();
+  const input = document.getElementById('apiKeyInput');
+  input.value = '';
+  input.placeholder = 'Paste your API key here…';
+  const statusEl = document.getElementById('keyStatus');
+  statusEl.textContent = 'No key saved';
+  statusEl.className = 'key-status';
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   WEEKLY DIGEST
+══════════════════════════════════════════════════════════════════ */
+function generateWeeklyDigest() {
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+  const totalPending = b.pendingPayments.reduce((s,p) => s+p.amount, 0);
+  const overdue = b.pendingPayments.filter(p=>p.status==='overdue');
+  const score = computeCreditScore();
+
+  const text = `📋 Weekly Digest — ${getDate()}\n\nIs hafte ka summary:\n• Revenue: ₹${fmt(b.revenue)}\n• Expenses: ₹${fmt(b.expenses)}\n• Profit: ₹${fmt(profit)}\n• Pending (collect): ₹${fmt(totalPending)}\n• Overdue: ${overdue.length} parties ⚠️\n• GST due in ${b.gstDueDays} din\n• Demo Credit Score: ${score}/100 (${scoreLabel(score)})\n\nAaj kya karein?`;
+  return { text, qrs: ['GST file karo', 'Overdue payments', 'Loan check karo'] };
+}
+
+function checkAndSendWeeklyDigest() {
+  const today = new Date();
+  const isSunday = today.getDay() === 0;
+  const todayStr = today.toISOString().slice(0,10);
+  if (isSunday && !state.silentMode && state.lastDigestSent !== todayStr) {
+    const digest = generateWeeklyDigest();
+    appendAssistantMsg(digest.text, digest.qrs, true);
+    state.messages.push({ role: 'assistant', content: digest.text });
+    state.lastDigestSent = todayStr;
+    saveState();
+    scrollChat();
+  }
+}
+
+function triggerWeeklyDigest() {
+  const digest = generateWeeklyDigest();
+  appendAssistantMsg(digest.text, digest.qrs, true);
+  state.messages.push({ role: 'assistant', content: digest.text });
+  saveState();
+  scrollChat();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SUPPORT MODAL
+══════════════════════════════════════════════════════════════════ */
+function openSupportModal() { document.getElementById('supportModal').classList.add('open'); }
+function closeSupportModal() { document.getElementById('supportModal').classList.remove('open'); }
+
+function submitSupportRequest() {
+  const msg = document.getElementById('supportMsg').value.trim();
+  if (!msg) { document.getElementById('supportMsg').focus(); return; }
+
+  state.supportRequests = state.supportRequests || [];
+  state.supportRequests.push({ date: new Date().toISOString(), message: msg });
+  saveState();
+
+  closeSupportModal();
+  document.getElementById('supportMsg').value = '';
+
+  const reply = `✅ Support note saved locally (demo).\n\nNo support team has received it — this prototype has no backend.\n\nLocal reference: #${Date.now().toString().slice(-6)}`;
+  appendAssistantMsg(reply, ['GST status', 'Pending payments'], false);
+  state.messages.push({ role: 'assistant', content: reply });
+  saveState();
+  scrollChat();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   UI — SIDEBAR
+══════════════════════════════════════════════════════════════════ */
+let sidebarOpen = false;
+
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('open', sidebarOpen);
+  document.getElementById('sidebarBackdrop').style.display = sidebarOpen ? 'block' : 'none';
+}
+
+function switchProvider(val) {
+  document.getElementById('providerSelect').value = val;
+  state.provider = val;
+  saveState();
+  updateApiKeyUI();
+}
+
+function onProviderChange() {
+  switchProvider(document.getElementById('providerSelect').value);
+}
+
+function toggleNotif() {
+  state.silentMode = !state.silentMode;
+  saveState();
+  updateNotifUI();
+}
+
+function updateNotifUI() {
+  const label = document.getElementById('notifLabel');
+  const badge = document.getElementById('notifBadge');
+  if (state.silentMode) {
+    label.textContent = '🔕 Digest Off';
+    badge.textContent = 'OFF';
+    badge.className = 'notif-badge off';
+  } else {
+    label.textContent = '🔔 Weekly Digest';
+    badge.textContent = 'ON';
+    badge.className = 'notif-badge on';
+  }
+}
+
+function updateSnapshot() {
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+  const totalPending = b.pendingPayments.reduce((s, p) => s + p.amount, 0);
+  document.getElementById('snapBank').textContent = '₹' + fmt(b.bank);
+  document.getElementById('snapPending').textContent = '₹' + fmt(totalPending);
+  document.getElementById('snapGST').textContent = '₹' + fmt(b.gstPayable);
+  document.getElementById('snapProfit').textContent = '₹' + fmt(profit);
+  updateCreditUI();
+}
+
+function showClearModal() { document.getElementById('clearModal').classList.add('open'); }
+function hideClearModal() { document.getElementById('clearModal').classList.remove('open'); }
+
+function clearHistory() {
+  state.messages = [];
+  state.biz = JSON.parse(JSON.stringify(DEMO_BIZ_DATA));
+  saveState();
+  hideClearModal();
+  document.getElementById('chatMessages').innerHTML = `<div class="date-chip">TODAY — ${getDate()}</div>`;
+  showWelcome();
+  updateSnapshot();
+}
+
+function newSession() {
+  if (state.messages.length > 0) {
+    const li = document.createElement('div');
+    li.className = 'history-item';
+    li.textContent = (state.messages.find(m => m.role === 'user')?.content || 'Session').slice(0, 32);
+    const time = document.createElement('div');
+    time.className = 'hi-time';
+    time.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    li.appendChild(time);
+    const list = document.getElementById('historyList');
+    list.insertBefore(li, list.firstChild);
+  }
+  clearHistory();
+}
+
+function exportChat() {
+  const text = state.messages.map(m => `[${m.role.toUpperCase()}] ${m.content}`).join('\n\n');
+  downloadBlob(new Blob([text], { type: 'text/plain' }), `finora_chat_${new Date().toISOString().slice(0, 10)}.txt`);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SYSTEM PROMPT
+══════════════════════════════════════════════════════════════════ */
+function buildSystemPrompt() {
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+  const lastProfit = b.lastRevenue - b.lastExpenses;
+  const profitDiff = profit - lastProfit;
+  const profitPct = ((profitDiff / lastProfit) * 100).toFixed(1);
+  const totalPending = b.pendingPayments.reduce((s, p) => s + p.amount, 0);
+  const score = computeCreditScore();
+  const range = loanRange(score);
+
+  const pendingList = b.pendingPayments
+    .map(p => `- ${p.name}: ₹${fmt(p.amount)} (${p.days} days ${p.status === 'overdue' ? '⚠️ OVERDUE' : p.status})`)
+    .join('\n');
+
+  const corrections = b.corrections.length > 0
+    ? '\n\nUSER CORRECTIONS (treat these as ground truth):\n' + b.corrections.map(c => `- ${c}`).join('\n')
+    : '';
+
+  return `You are Finora — a chat-based AI financial assistant prototype for small businesses. This is a demo: all business data below is synthetic, and you cannot take real-world actions (no tax filing, messaging, payments or lender contact). You talk like a smart, helpful friend who understands business finances.
+
+PERSONALITY:
+- Talk in Hinglish (Hindi + English mix) — warm, casual, smart
+- Keep messages SHORT — max 8-10 lines
+- Never use jargon. Simple language always.
+- Use ₹ for rupees. Use line breaks for clarity.
+- Always confirm before executing any "action"
+- For summaries, ALWAYS compare to last month
+
+BUSINESS DATA (synthetic) — ${b.name}:
+GSTIN: ${b.gstin}
+
+THIS MONTH:
+- Sales: ₹${fmt(b.revenue)}
+- Expenses: ₹${fmt(b.expenses)}
+- Profit: ₹${fmt(profit)} ${profitDiff >= 0 ? `(⬆️ +${profitPct}% vs last month)` : `(⬇️ ${profitPct}% vs last month)`}
+
+LAST MONTH:
+- Sales: ₹${fmt(b.lastRevenue)}
+- Profit: ₹${fmt(lastProfit)}
+
+GST:
+- Payable this month: ₹${fmt(b.gstPayable)}
+- Due in: ${b.gstDueDays} days
+- TDS pending: ₹${fmt(b.tdsPending)}
+- Last 3 months: ✅ filed on time
+
+PENDING PAYMENTS (${b.pendingPayments.length} parties — ₹${fmt(totalPending)} total):
+${pendingList}
+
+CASH FLOW:
+- Bank balance: ₹${fmt(b.bank)}
+- Biggest risk: GST ₹${fmt(b.gstPayable)} due in ${b.gstDueDays} days
+- ⚠️ Cash may get tight if overdue payments don't come
+
+CREDIT HEALTH (demo calculation — not an official credit score):
+- Demo score: ${score}/100 (${scoreLabel(score)})
+- Illustrative bank loan range: ${range.bank}
+- Illustrative NBFC range: ${range.nbfc}
+
+RULES:
+1. Max 10 lines per response
+2. End with 2-3 quick reply options using → prefix (e.g., → GST details, → Send reminder)
+3. For ANY action (file GST, send reminder, add invoice, apply loan), FIRST output CONFIRM_ACTION: followed by a single-line JSON object, e.g. CONFIRM_ACTION:{"question":"...","successMsg":"..."}. Actions are simulations: successMsg must say so, and you must never claim anything was really filed, sent or submitted.
+4. Use ⚠️ for warnings, ✅ for good, 🔴 for critical
+5. When adding invoices, output INVOICE_ADD: followed by a single-line JSON object, e.g. INVOICE_ADD:{"name":"X","amount":50000,"text":"..."}
+6. Always format money: ₹8,23,000 not 823000
+7. For last month comparison, always include % change
+8. When user asks about loan/credit/working capital, share the demo score and illustrative ranges, and state clearly that they are not an official credit score or a lender decision
+9. When user says "CA ko bhej" or "export", say "CSV_EXPORT" in your response${corrections}`;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FORMATTING HELPERS
+══════════════════════════════════════════════════════════════════ */
+function fmt(n) { return new Intl.NumberFormat('en-IN').format(n); }
+function getTime() { return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); }
+function getDate() { return new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function scrollChat() { const a = document.getElementById('chatMessages'); a.scrollTop = a.scrollHeight; }
+
+/* ══════════════════════════════════════════════════════════════════
+   MOCK RESPONSES & AI PROVIDERS
+══════════════════════════════════════════════════════════════════ */
+function confirmAction(question, successMsg) {
+  return `CONFIRM_ACTION:${JSON.stringify({ question, successMsg })}`;
+}
+
+function getMockResponse(userMsg) {
+  const lower = userMsg.toLowerCase();
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+  const totalPending = b.pendingPayments.reduce((s, p) => s + p.amount, 0);
+  const overdue = b.pendingPayments.filter(p => p.status === 'overdue');
+  const dueDateStr = new Date(Date.now() + b.gstDueDays * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
+
+  // Loan / credit
+  if (lower.includes('loan') || lower.includes('credit') || lower.includes('working capital')) {
+    return loanSummaryText() + '\n\nKya karein?\n→ Prepare demo bank application\n→ Prepare demo NBFC application\n→ GALAT HAI ❌';
+  }
+
+  // CA export
+  if (lower.includes('ca ko') || lower.includes('export') || lower.includes('csv')) {
+    return 'CSV_EXPORT';
+  }
+
+  // GST
+  if (lower.includes('gst')) {
+    return `Is mahine GST ₹${fmt(b.gstPayable)} bharna hai ⚠️\nFiling deadline: ${dueDateStr}\n\nLast 3 mahine ✅ on time file hua.\nTDS bhi ₹${fmt(b.tdsPending)} pending hai.\n\n${confirmAction(`Demo: GST ₹${fmt(b.gstPayable)} filing workflow simulate karein? (Koi real filing nahi hogi)`, 'GST filing workflow simulated — nothing was filed.')}\n\n→ GST file karo (demo)\n→ TDS bhi dekho\n→ GALAT HAI ❌`;
+  }
+
+  if (lower.includes('cash')) {
+    const afterGST = b.bank - b.gstPayable;
+    const worst = overdue[0];
+    const worstLine = worst ? `\n${worst.name} ka ₹${fmt(worst.amount)} (${worst.days} din overdue) — critical hai.\n` : '';
+    return `Cash flow analysis ⚠️\n\nBank balance: ₹${fmt(b.bank)}\nGST due (${b.gstDueDays} din): ₹${fmt(b.gstPayable)}\n\nBalance after GST: sirf ₹${fmt(afterGST)} bachega!\n${worstLine}\n→ Reminder bhejo\n→ Pending sab dekho`;
+  }
+
+  // A specific party mentioned by name
+  const party = b.pendingPayments.find(p => lower.includes(p.name.toLowerCase()));
+  if (party) {
+    const statusLine = party.status === 'overdue' ? `${party.days} din se overdue ⚠️🔴` : `${party.days} din purana (${party.status})`;
+    return `${party.name} — ₹${fmt(party.amount)}\nStatus: ${statusLine}\n\n${confirmAction(`Demo: ${party.name} ko reminder simulate karein? ₹${fmt(party.amount)} pending.`, `Reminder simulated for ${party.name} — no message was sent.`)}\n\n→ Reminder bhejo\n→ Baaki overdue dekho`;
+  }
+
+  if (lower.includes('summary') || lower.includes('mahine ka')) {
+    const lastProfit = b.lastRevenue - b.lastExpenses;
+    const pct = (((profit - lastProfit) / lastProfit) * 100).toFixed(1);
+    return `Is mahine summary ✅\n\nSales: ₹${fmt(b.revenue)} (pichle mahine ₹${fmt(b.lastRevenue)} — ⬆️ ${(((b.revenue - b.lastRevenue) / b.lastRevenue) * 100).toFixed(1)}%)\nExpenses: ₹${fmt(b.expenses)}\nProfit: ₹${fmt(profit)} ⬆️ +${pct}% vs last month\n\n⚠️ Warning:\n• GST ₹${fmt(b.gstPayable)} — ${b.gstDueDays} din bache\n• ${overdue.length} overdue payments\n\n→ Pending payments\n→ GST file karo (demo)\n→ GALAT HAI ❌`;
+  }
+
+  if (lower.includes('overdue')) {
+    const overdueList = overdue.map((p, i) => `${i + 1}. ${p.name} — ₹${fmt(p.amount)} (${p.days} din) ⚠️`).join('\n');
+    const pending = b.pendingPayments.filter(p => p.status !== 'overdue');
+    const pendList = pending.map((p, i) => `${i + overdue.length + 1}. ${p.name} — ₹${fmt(p.amount)} (${p.days} din)`).join('\n');
+    return `Overdue Payments 🔴\n\n${overdueList}\n\nBaaki pending:\n${pendList}\n\nTotal: ₹${fmt(totalPending)}\n\n→ Sabko reminder bhejo\n→ GALAT HAI ❌`;
+  }
+
+  if (lower.includes('reminder') || lower.includes('sabko')) {
+    return `Sabko reminder bhejein?\n\n${confirmAction(`Demo: ${b.pendingPayments.length} parties ko payment reminder simulate karein? Total ₹${fmt(totalPending)} pending.`, `Reminders simulated for ${b.pendingPayments.length} parties — no messages were sent.`)}\n\n→ Sirf overdue walo ko\n→ Cancel`;
+  }
+
+  if (lower.includes('note karo') || lower.includes('dena hai')) {
+    const amtMatch = userMsg.match(/(\d[\d,]*)/);
+    const amount = amtMatch ? parseInt(amtMatch[1].replace(/,/g, ''), 10) : 50000;
+    const nameMatch = userMsg.match(/^(.+?)\s+ne\s/i);
+    const name = (nameMatch ? nameMatch[1] : 'Customer').slice(0, 60);
+    return `INVOICE_ADD:${JSON.stringify({ name, amount, text: `${name} se ₹${fmt(amount)} pending note kar raha hoon.` })}`;
+  }
+
+  return `Samajh gaya! ✅\n\nMock mode mein sirf kuch demo sawal supported hain. Aur kuch chahiye?\n\n→ GST status\n→ Pending payments\n→ Monthly summary`;
+}
+
+// Model IDs are plain constants; update them if a provider retires a model.
+const PROVIDER_MODELS = {
+  claude: 'claude-sonnet-4-20250514',
+  openai: 'gpt-4o-mini',
+  gemini: 'gemini-1.5-flash'
+};
+
+// Last 10 messages, starting at a user turn (providers reject assistant-first histories).
+function buildApiMessages() {
+  const msgs = state.messages.slice(-10).map(m => ({ role: m.role, content: m.content }));
+  while (msgs.length && msgs[0].role !== 'user') msgs.shift();
+  return msgs;
+}
+
+async function requestJson(url, headers, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) throw new Error(data.error?.message || `HTTP ${res.status}`);
+  return data;
+}
+
+async function callAI(userMsg) {
+  if (state.provider === 'mock') {
+    await new Promise(r => setTimeout(r, 1000 + Math.random() * 600));
+    return getMockResponse(userMsg);
+  }
+  const apiMessages = buildApiMessages();
+  if (state.provider === 'claude') return callClaude(apiMessages);
+  if (state.provider === 'openai') return callOpenAI(apiMessages);
+  if (state.provider === 'gemini') return callGemini(apiMessages);
+  throw new Error('Unknown provider');
+}
+
+async function callClaude(messages) {
+  const key = state.apiKeys.claude;
+  if (!key) throw new Error('NO_KEY');
+  const data = await requestJson('https://api.anthropic.com/v1/messages', {
+    'x-api-key': key,
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true'
+  }, { model: PROVIDER_MODELS.claude, max_tokens: 500, system: buildSystemPrompt(), messages });
+  return data.content?.[0]?.text || '';
+}
+
+async function callOpenAI(messages) {
+  const key = state.apiKeys.openai;
+  if (!key) throw new Error('NO_KEY');
+  const data = await requestJson('https://api.openai.com/v1/chat/completions', {
+    'Authorization': 'Bearer ' + key
+  }, { model: PROVIDER_MODELS.openai, max_tokens: 500, messages: [{ role: 'system', content: buildSystemPrompt() }, ...messages] });
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function callGemini(messages) {
+  const key = state.apiKeys.gemini;
+  if (!key) throw new Error('NO_KEY');
+  const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+  const data = await requestJson(
+    `https://generativelanguage.googleapis.com/v1beta/models/${PROVIDER_MODELS.gemini}:generateContent`,
+    { 'x-goog-api-key': key },
+    { system_instruction: { parts: [{ text: buildSystemPrompt() }] }, contents }
+  );
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSE PARSING
+══════════════════════════════════════════════════════════════════ */
+function parseResponse(raw) {
+  let text = raw;
+  let confirmData = null;
+  let invoiceData = null;
+  const qrs = [];
+
+  // Handle CSV export signal
+  if (raw && raw.includes('CSV_EXPORT')) {
+    exportToCSV();
+    return { text: '', qrs: [], confirmData: null, invoiceData: null, handled: true };
+  }
+
+  const confirmMatch = raw.match(/CONFIRM_ACTION:(\{[^}]+\})/);
+  if (confirmMatch) {
+    try { confirmData = JSON.parse(confirmMatch[1]); } catch(e) {}
+    text = text.replace(/CONFIRM_ACTION:\{[^}]+\}/g, '').trim();
+  }
+
+  const invMatch = raw.match(/INVOICE_ADD:(\{[^}]+\})/);
+  if (invMatch) {
+    try {
+      const inv = JSON.parse(invMatch[1]);
+      invoiceData = inv;
+      text = text.replace(/INVOICE_ADD:\{[^}]+\}/g, '').trim();
+      if (inv.text) text = (text || inv.text).trim();
+    } catch(e) {}
+  }
+
+  const lines = text.split('\n');
+  const cleanLines = [];
+  lines.forEach(l => {
+    if (l.trim().startsWith('→')) {
+      const qr = l.replace('→', '').trim();
+      if (qr && qr.length < 50) qrs.push(qr);
+    } else {
+      cleanLines.push(l);
+    }
+  });
+  text = cleanLines.join('\n').trim();
+
+  return { text, qrs: qrs.slice(0, 4), confirmData, invoiceData, handled: false };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SEND MESSAGE
+══════════════════════════════════════════════════════════════════ */
+let isBusy = false;
+
+async function sendMessage() {
+  if (isBusy) return;
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  appendUserMsg(text);
+  state.messages.push({ role: 'user', content: text });
+  saveState();
+
+  // Quick replies that are handled locally
+  const lower = text.toLowerCase();
+  if (lower.includes('demo bank application')) { applyForLoan('Bank Loan'); return; }
+  if (lower.includes('demo nbfc application')) { applyForLoan('NBFC'); return; }
+  if (lower === 'switch to mock mode') {
+    switchProvider('mock');
+    appendAssistantMsg('Mock / Demo Mode on ✅ Ab bina API key ke try karo.', ['GST status', 'Pending payments'], false);
+    return;
+  }
+
+  isBusy = true;
+  setStatus('Typing…');
+  showTyping();
+
+  try {
+    const raw = await callAI(text);
+    removeTyping();
+
+    const parsed = parseResponse(raw);
+    if (parsed.handled) { isBusy = false; setStatus('Ready'); return; }
+
+    const { text: reply, qrs, confirmData, invoiceData } = parsed;
+
+    state.messages.push({ role: 'assistant', content: raw });
+    saveState();
+
+    const defaultQRs = ['GST status', 'Pending payments', 'GALAT HAI ❌'];
+    if (reply) appendAssistantMsg(reply, qrs.length ? qrs : defaultQRs, true, confirmData, invoiceData);
+    setStatus('Ready');
+    updateCreditUI();
+  } catch (err) {
+    removeTyping();
+    if (err.message === 'NO_KEY') {
+      appendAssistantMsg('API key nahi mili. ⚠️\n\nSidebar → AI Provider select karo → apni API key daalo.\n\nYa "Mock / Demo Mode" use karo bina key ke!', ['Switch to Mock Mode'], false);
+    } else {
+      appendAssistantMsg('Provider request fail ho gayi. 🔴\n\nAPI key aur network check karo, ya Mock / Demo Mode try karo.', ['Switch to Mock Mode'], false);
+    }
+    setStatus('Error');
+    setTimeout(() => setStatus('Ready'), 3000);
+  }
+  isBusy = false;
+}
+
+function sendQuick(text) {
+  document.getElementById('msgInput').value = text;
+  sendMessage();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   INPUT UTILS
+══════════════════════════════════════════════════════════════════ */
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function setStatus(text) { document.getElementById('statusText').textContent = text; }
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) { return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+/* ══════════════════════════════════════════════════════════════════
+   MESSAGE RENDERING
+══════════════════════════════════════════════════════════════════ */
+function appendUserMsg(text) {
+  const area = document.getElementById('chatMessages');
+  const g = document.createElement('div');
+  g.className = 'msg-group user fade-in';
+  g.innerHTML = `<div class="bubble">${escHtml(text)}</div><div class="msg-meta"><div class="msg-time">${getTime()}</div></div>`;
+  area.appendChild(g);
+  scrollChat();
+}
+
+function appendAssistantMsg(text, qrs = [], showTrust = true, confirmData = null, invoiceData = null, skipTrust = false) {
+  const area = document.getElementById('chatMessages');
+  const g = document.createElement('div');
+  g.className = 'msg-group assistant fade-in';
+
+  const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  g.setAttribute('data-id', msgId);
+
+  let html = `<div class="bubble">${escHtml(text)}</div>`;
+  html += `<div class="msg-meta"><div class="msg-time">${getTime()}</div></div>`;
+
+  if (confirmData) {
+    const question = confirmData.question || 'Run this simulated action?';
+    html += `<div class="confirm-bubble">
+      <div class="confirm-q">⚠️ ${escHtml(question)}</div>
+      <div class="confirm-btns">
+        <button class="confirm-yes" data-action="confirm" data-msg-id="${msgId}" data-payload="${escHtml(JSON.stringify(confirmData))}">✅ Confirm</button>
+        <button class="confirm-no" data-action="cancel-confirm" data-msg-id="${msgId}">❌ Cancel</button>
+      </div>
+    </div>`;
+  }
+
+  if (invoiceData) {
+    const invName = String(invoiceData.name || 'Customer').slice(0, 60);
+    const invAmount = Number(invoiceData.amount);
+    if (Number.isFinite(invAmount) && invAmount > 0) {
+      html += `<div class="confirm-bubble">
+        <div class="confirm-q">🧾 ${escHtml(invName)} se ₹${fmt(invAmount)} pending note karein?</div>
+        <div class="confirm-btns">
+          <button class="confirm-yes" data-action="add-invoice" data-msg-id="${msgId}" data-name="${escHtml(invName)}" data-amount="${invAmount}">✅ Haan, Add Karo</button>
+          <button class="confirm-no" data-action="cancel-action" data-msg-id="${msgId}">❌ Cancel</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  if (qrs.length > 0) {
+    html += `<div class="quick-replies">` + qrs.map(qr =>
+      `<button class="qr-btn" data-action="quick" data-text="${escHtml(qr)}">${escHtml(qr)}</button>`
+    ).join('') + `</div>`;
+  }
+
+  if (showTrust && !skipTrust) {
+    html += `<div class="trust-actions" id="trust_${msgId}">
+      <button class="trust-btn sahi" data-action="sahi" data-msg-id="${msgId}">✅ Sahi hai</button>
+      <button class="trust-btn galat" data-action="galat" data-msg-id="${msgId}">❌ GALAT HAI</button>
+    </div>
+    <div class="correction-wrap hidden" id="corr_${msgId}">
+      <input type="text" class="correction-input" id="corrInput_${msgId}" placeholder="Kya galat hai? Batao...">
+      <button class="correction-send" data-action="send-correction" data-msg-id="${msgId}">Send</button>
+    </div>`;
+  }
+
+  g.innerHTML = html;
+  area.appendChild(g);
+  scrollChat();
+}
+
+function showTyping() {
+  const area = document.getElementById('chatMessages');
+  const el = document.createElement('div');
+  el.className = 'msg-group assistant fade-in';
+  el.id = 'typingEl';
+  el.innerHTML = `<div class="typing-bubble"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div>`;
+  area.appendChild(el);
+  scrollChat();
+}
+
+function removeTyping() {
+  const el = document.getElementById('typingEl');
+  if (el) el.remove();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TRUST / DISPUTE SYSTEM
+══════════════════════════════════════════════════════════════════ */
+function markSahi(msgId) {
+  const trustEl = document.getElementById('trust_' + msgId);
+  if (trustEl) trustEl.innerHTML = '<span style="font-size:11px;color:var(--green)">✅ Noted</span>';
+}
+
+function markGalat(msgId) {
+  document.getElementById('trust_' + msgId).classList.add('hidden');
+  document.getElementById('corr_' + msgId).classList.remove('hidden');
+  document.getElementById('corrInput_' + msgId).focus();
+}
+
+function submitCorrection(msgId) {
+  const input = document.getElementById('corrInput_' + msgId);
+  const correction = input.value.trim();
+  if (!correction) return;
+  state.biz.corrections.push(correction);
+  const corrWrap = document.getElementById('corr_' + msgId);
+  corrWrap.innerHTML = `<span style="font-size:11.5px;color:var(--green)">✅ Thanks! "${escHtml(correction)}" — Next time sahi rahega.</span>`;
+  state.messages.push({ role: 'user', content: `CORRECTION: ${correction}` });
+  state.messages.push({ role: 'assistant', content: `Samajh gaya! ✅ "${correction}" — Main is correction ko yaad rakhunga.` });
+  saveState();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   CONFIRMATION SYSTEM
+══════════════════════════════════════════════════════════════════ */
+function handleConfirm(msgId, confirmed, payload) {
+  const confirmBubble = document.querySelector(`[data-id="${msgId}"] .confirm-bubble`);
+  if (confirmed) {
+    let data = {};
+    try { data = JSON.parse(payload || '{}'); } catch (e) { /* malformed payload: use defaults */ }
+    const detail = String(data.successMsg || 'Action complete.');
+    if (confirmBubble) confirmBubble.innerHTML = '<span style="color:var(--green);font-size:12.5px">✅ Simulated: ' + escHtml(detail) + ' (Demo — nothing was sent or filed.)</span>';
+    state.messages.push({ role: 'user', content: 'Confirmed.' });
+    state.messages.push({ role: 'assistant', content: '✅ Simulated: ' + detail + '\n\n→ Aur kuch karna hai?' });
+  } else {
+    if (confirmBubble) confirmBubble.innerHTML = '<span style="color:var(--text3);font-size:12.5px">❌ Cancelled. Kya karna hai batao.</span>';
+    state.messages.push({ role: 'user', content: 'Cancel.' });
+    state.messages.push({ role: 'assistant', content: 'Theek hai, cancelled. ❌ Kya karna hai?' });
+  }
+  saveState();
+}
+
+function cancelAction(msgId) {
+  const confirmBubble = document.querySelector(`[data-id="${msgId}"] .confirm-bubble`);
+  if (confirmBubble) confirmBubble.innerHTML = '<span style="color:var(--text3);font-size:12.5px">❌ Cancelled.</span>';
+}
+
+function addInvoice(msgId, name, amount) {
+  if (!Number.isFinite(amount) || amount <= 0) return;
+  state.biz.pendingPayments.push({ name, amount, days: 0, status: 'new' });
+  saveState();
+  updateSnapshot();
+  const confirmBubble = document.querySelector(`[data-id="${msgId}"] .confirm-bubble`);
+  if (confirmBubble) confirmBubble.innerHTML = `<span style="color:var(--green);font-size:12.5px">✅ Added! ${escHtml(name)} — ₹${fmt(amount)} pending list mein hai.</span>`;
+  state.messages.push({ role: 'user', content: 'Haan, add karo.' });
+  state.messages.push({ role: 'assistant', content: `✅ ${name} se ₹${fmt(amount)} pending note ho gaya!\n\nTotal pending ab ₹${fmt(state.biz.pendingPayments.reduce((s, p) => s + p.amount, 0))} ho gaya.` });
+  saveState();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   WELCOME MESSAGE
+══════════════════════════════════════════════════════════════════ */
+function showWelcome() {
+  const b = state.biz;
+  const profit = b.revenue - b.expenses;
+  const totalPending = b.pendingPayments.reduce((s, p) => s + p.amount, 0);
+  const overdue = b.pendingPayments.filter(p => p.status === 'overdue').length;
+  const score = computeCreditScore();
+
+  const welcomeText = `Namaste! 🙏\n\nMain Finora hoon — ek demo financial assistant (synthetic data, real financial advice nahi).\n\nAaj ki situation:\n• Profit: ₹${fmt(profit)} ✅\n• Pending (collect karna hai): ₹${fmt(totalPending)}\n• GST due in ${b.gstDueDays} days: ₹${fmt(b.gstPayable)} ⚠️\n• Overdue payments: ${overdue} parties 🔴\n• Demo Credit Score: ${score}/100 (${scoreLabel(score)})\n\nBatao, kya chahiye?`;
+
+  appendAssistantMsg(welcomeText, ['GST status batao', 'Pending payments', 'Loan check karo'], true);
+  state.messages.push({ role: 'assistant', content: welcomeText });
+  saveState();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════════ */
+// One delegated listener handles all dynamically rendered buttons (no inline handlers).
+function handleDelegatedClick(e) {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const d = el.dataset;
+  switch (d.action) {
+    case 'quick': sendQuick(d.text); break;
+    case 'confirm': handleConfirm(d.msgId, true, d.payload); break;
+    case 'cancel-confirm': handleConfirm(d.msgId, false); break;
+    case 'add-invoice': addInvoice(d.msgId, d.name, Number(d.amount)); break;
+    case 'cancel-action': cancelAction(d.msgId); break;
+    case 'loan-confirm': handleLoanConfirm(d.msgId, true, d.type); break;
+    case 'loan-cancel': handleLoanConfirm(d.msgId, false, ''); break;
+    case 'bill-add': confirmBillAdd(d.msgId, d.vendor, Number(d.amount), d.date, d.category); break;
+    case 'bill-cancel': cancelBillAdd(d.msgId); break;
+    case 'sahi': markSahi(d.msgId); break;
+    case 'galat': markGalat(d.msgId); break;
+    case 'send-correction': submitCorrection(d.msgId); break;
+  }
+}
+
+function init() {
+  loadState();
+  document.addEventListener('click', handleDelegatedClick);
+
+  document.getElementById('headerSub').textContent = `${state.biz.name} • GSTIN: ${state.biz.gstin} • Synthetic demo data`;
+  document.getElementById('todayDate').textContent = getDate();
+  document.getElementById('histTimestamp').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+  document.getElementById('providerSelect').value = state.provider || 'claude';
+  updateApiKeyUI();
+  updateNotifUI();
+  updateSnapshot(); // also updates the credit UI
+
+  if (state.messages.length === 0) {
+    showWelcome();
+  } else {
+    state.messages.forEach(m => {
+      if (m.role === 'user') appendUserMsg(m.content);
+      else {
+        const { text, qrs } = parseResponse(m.content);
+        if (text) appendAssistantMsg(text, qrs.length ? qrs : [], false);
+      }
+    });
+  }
+
+  // Weekly digest check (on load + hourly while the page is open)
+  checkAndSendWeeklyDigest();
+  setInterval(checkAndSendWeeklyDigest, 3600000);
+}
+
+init();
+</script>
+</body>
+</html>
